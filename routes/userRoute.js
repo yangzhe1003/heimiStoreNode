@@ -1,31 +1,71 @@
 require('babel-polyfill');
-let fetch = require('node-fetch');
 var express = require('express');
 var router = express.Router();
 let userDB = require('../DB/userDB');
 
-router.get('/getUserCode',(res,resp) => {
-    console.log('用户code:',res.query.code);
-    let code = res.query.code;
-    fetch('https://api.weixin.qq.com/sns/jscode2session?appid=wxab529bcb173f0b46&secret=3ff03d4f4efca88708743208d21bbc2a&grant_type=authorization_code&js_code='+code)
-    .then(function(res) {
-        return res.json();
-    }).then(function(json) {
-        userDB.getUserByOpenId(json.openid).then(res => {
-            console.log('查询到的值为:',res);
-            if(!res.length){
-                console.log('数据库没有openid',res);
-                userDB.setUserOpenId(json.openid).then(res => {
-                    console.log('保存openid成功',res);
-                }).catch(err => {
-                    console.log('保存openid失败',err);
-                });
-            }
-        })
-        console.log('微信服务器返回数据:',json);
-        resp.send(json);
-    });
+var identityKey = 'skey';
+var users = require('./usersTable').items;
+//定义匹配用户函数
+var findUser = function(name, password){
+	return users.find(function(item){
+		return item.name === name && item.password === password;
+	});
+};
+
+/*********后台接口***********/
+
+router.post('/login', function(req, resp, next){
+	
+	var sess = req.session;
+    var user = findUser(req.body.user_name, req.body.password);
+    
+	if(user){
+		req.session.regenerate(function(err) {
+			if(err){
+				return resp.json({code: 2, message: '登录失败'});				
+			}
+			
+			req.session.loginUser = user.name;
+			resp.json({code: 0, data: { user_name: user.name }, message: '登录成功'});							
+		});
+	}else{
+		resp.json({code: 1, message: '账号或密码错误'});
+	}	
 });
+
+router.get('/logout', function(req, resp, next){
+	// 备注：这里用的 session-file-store 在destroy 方法里，并没有销毁cookie
+	// 所以客户端的 cookie 还是存在，导致的问题 --> 退出登陆后，服务端检测到cookie
+	// 然后去查找对应的 session 文件，报错
+	// session-file-store 本身的bug	
+
+	req.session.destroy(function(err) {
+		if(err){
+			resp.json({code: 2, message: '退出登录失败'});
+			return;
+		}
+		
+		// req.session.loginUser = null;
+		resp.clearCookie(identityKey);
+		resp.json({code: 0, message: '登出成功'});
+	});
+});
+
+router.get('/getUserCount',(req,resp)=>{
+	userDB.getUserCount().then(res => {
+		resp.json({
+            code: 0,
+            data: res,
+            message: 'success'
+		});
+	}).catch(err => {
+        resp.json({
+            code: 2,
+            message: err
+        });
+	});
+});
+
 
 
 module.exports = router;

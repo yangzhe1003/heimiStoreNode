@@ -4,7 +4,7 @@ let pool = global.pool;
 if(!pool){
     //创建连接池
     pool = mysql.createPool({
-        database: 'shopStore',
+        database: 'heimiStoreDB',
         user: 'root',
         password: 'root'
     });
