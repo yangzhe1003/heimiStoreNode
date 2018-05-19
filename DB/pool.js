@@ -16,6 +16,7 @@ if(!pool){
 //封装获取数据库连接
 getConnection = function(){
     return new Promise((resolve,reject) => {
+        //连接到数据库
         pool.getConnection((err, connect) => {
             if(!err){
                 resolve(connect);
@@ -30,23 +31,24 @@ getConnection = function(){
 execute = function(sql){
     return new Promise((resolve,reject) => {
         let connection;
+        //调用连接方法
         getConnection().then((connect) => {
             connection = connect;
-            connect.query(sql,(err,result) => {
+            connect.query(sql,(err,result) => {     //连接成功，执行sql语句
+
                 if(!err){
-                    resolve(result);
+                    resolve(result);  //返回查询成功结果
                 }else{
-                    reject(err);
+                    reject(err);   //返回查询失败结果
                 }
             });
         }).catch((err) => {
-            reject(err);
+            reject(err);  //返回连接失败结果
         }).finally(() => {
             if(connection){
-                connection.release();
+                connection.release();  //无论成功还是失败，都释放掉连接，方便下一次连接
             }
         });
-
     });
 }
 

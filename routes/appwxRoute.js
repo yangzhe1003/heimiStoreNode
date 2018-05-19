@@ -1,5 +1,6 @@
 require('babel-polyfill');
 let fetch = require('node-fetch');
+var moment = require('moment');
 var express = require('express');
 var router = express.Router();
 let goodsDB = require('../DB/goodsDB');
@@ -37,7 +38,8 @@ router.get('/getUserCode',(res,resp) => {
 
 //商品相关接口
 router.get('/getAllGoods',(res,resp) => {
-    goodsDB.getAllGoods().then(res => {
+    let { keyword } = res.query;
+    goodsDB.getAllGoods_wx(keyword).then(res => {
         resp.json({
             code: 0,
             data: res,
@@ -52,7 +54,7 @@ router.get('/getAllGoods',(res,resp) => {
 });
 
 router.get('/getBanners',(res,resp) => {
-    goodsDB.getBanners().then(res => {
+    goodsDB.getBanners_wx().then(res => {
         resp.json({
             code: 0,
             data: res,
@@ -67,7 +69,7 @@ router.get('/getBanners',(res,resp) => {
 });
 
 router.get('/getAllClassify',(res,resp) => {
-    goodsDB.getAllClassify().then(res => {
+    goodsDB.getAllClassify_wx().then(res => {
         resp.json({
             code: 0,
             data: res,
@@ -83,7 +85,7 @@ router.get('/getAllClassify',(res,resp) => {
 
 router.get('/getGoodsByClassify',(req,resp) => {
     let classify_id = req.query.id;
-    goodsDB.getGoodsByClassify(classify_id).then(res => {
+    goodsDB.getGoodsByClassify_wx(classify_id).then(res => {
         resp.json({
             code: 0,
             data: res,
@@ -149,25 +151,38 @@ router.get('/getCart',(res,resp) => {
     });
 })
 
-router.get('/toBuy',(res,resp) => {
-    let userId = res.query.userId;
-    let goods = res.query.goods;
+router.post('/toBuy',(res,resp) => {
+    const { userId, goods } = res.body;
     cartDB.getCartById(userId,goods).then(res=>{
-        console.log(goods);
         let totalMoney = 0;
         res.forEach((item,index)=>{
             totalMoney += item.good_price;
         });
-        let update = moment().format('YYYY-MM-DD HH:mm:ss');
-        cartDB.setOrder(userId,goods,totalMoney,update).then(res=>{
-            console.log(res);
+        let createTime = Date.parse(new Date());
+        cartDB.setOrder(userId,goods,totalMoney,createTime).then(res=>{
+            cartDB.deleteCartById(userId,goods).then(res => {
+                resp.json({
+                    code: 0,
+                    message: 'success'
+                });
+            }).catch(err => {
+                resp.json({
+                    code: 1,
+                    message: err
+                });
+            });
+
         }).catch(err=>{
-            console.log(err);
+            resp.json({
+                code: 1,
+                message: err
+            });
         });
-        resp.send();
     }).catch(err =>{
-        console.log(err);
-        resp.send();
+        resp.json({
+            code: 1,
+            message: err
+        });
     });
 });
 
@@ -190,6 +205,11 @@ router.get('/getOrderByUserId',(res,resp)=>{
 router.get('/getAllOrder',(req,resp)=>{
 
     cartDB.getAllOrder().then(res=>{
+        if(res.length){
+            res.map((item,index) => {
+                item.createTime = moment(+item.createTime).format('YYYY-MM-DD HH:MM:ss');
+            });
+        }
         resp.json({
             code: 0,
             data: res,

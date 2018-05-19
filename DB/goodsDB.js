@@ -2,13 +2,31 @@ require('babel-polyfill');
 let pool = require('./pool');
 module.exports = {
     //获取所有商品列表
-    getAllGoods(){
-        let sql = "select * from goods order by id desc;";
+    getAllGoods(keyword){
+        let sql;
+        if(keyword){
+            sql = `select * from goods where name like '%${keyword}%' order by id desc;`;
+        }else {
+            sql = "select * from goods order by id desc;";
+        }
+        return pool.execute(sql);
+    },
+    getAllGoods_wx(keyword){
+        let sql;
+        if(keyword){
+            sql = `select * from goods where name like '%${keyword}%' and status = '1' order by id desc;`;
+        }else {
+            sql = "select * from goods where status = '1' order by id desc;";
+        }
         return pool.execute(sql);
     },
     //获取banner
     getBanners(){
         let sql = "select * from banners order by id desc;";
+        return pool.execute(sql);
+    },
+    getBanners_wx(){
+        let sql = "select * from banners where status = '1' order by id desc;";
         return pool.execute(sql);
     },
     //获取banner
@@ -21,6 +39,10 @@ module.exports = {
         let sql = "select * from classify;";
         return pool.execute(sql);
     },
+    getAllClassify_wx(){
+        let sql = "select * from classify where status = '1';";
+        return pool.execute(sql);
+    },
 
     //后台修改商品
     editGood(id, name, classify_id, price, model, detail, small_img, img_url1, img_url2, img_url3, detail_url1, detail_url2, detail_url3){
@@ -29,7 +51,7 @@ module.exports = {
             sql = `insert into goods (name,detail,model,small_img,img_url1,img_url2,img_url3,price,detail_url1,detail_url2,detail_url3) values ( "${name}", "${detail}", "${model}", "${small_img}", "${img_url1}", "${img_url2}", "${img_url3}", ${price}, "${detail_url1}", "${detail_url2}", "${detail_url3}");`;
 
         }else {
-            sql = `UPDATE goods SET name="${name}", detail="${detail}", model="${model}", small_img="${small_img}", img_url1="${img_url1}", img_url2="${img_url2}", img_url3="${img_url3}", price=${price}, detail_url1="${detail_url1}", detail_url2="${detail_url2}", detail_url3="${detail_url3}" WHERE id=${id};`;
+            sql = `UPDATE goods SET name="${name}", detail="${detail}", model="${model}", small_img="${small_img}", img_url1="${img_url1}", img_url2="${img_url2}", img_url3="${img_url3}", price=${price}, detail_url1="${detail_url1}", detail_url2="${detail_url2}", detail_url3="${detail_url3}", classify_id="${classify_id}" WHERE id=${id};`;
         }
         return pool.execute(sql);
     },
@@ -58,6 +80,10 @@ module.exports = {
     //根据分类获取商品
     getGoodsByClassify(classify_id){
         let sql = `select id,name,small_img from goods where classify_id = ${classify_id};`;
+        return pool.execute(sql);
+    },
+    getGoodsByClassify_wx(classify_id){
+        let sql = `select id,name,small_img from goods where classify_id = ${classify_id} and status = '1';`;
         return pool.execute(sql);
     },
     //根据商品id查找商品

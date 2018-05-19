@@ -21,8 +21,14 @@ module.exports = {
         let sql = "select * from cart where user_id = '"+userId+"' and good_id in ("+goods+") and status = '0';";
         return pool.execute(sql);
     },
-    setOrder(userId,goods,totalMoney,update){
-        let sql = "INSERT INTO orders ( user_id, goods_id, totalMoney, update, status) VALUES ('"+userId+"', '"+goods+"', '"+totalMoney+"', '"+update+"', '0');";
+    setOrder(userId,goods,totalMoney,createTime){
+        let sql = `INSERT INTO orders ( user_id, goods_id, totalMoney, createTime, status) VALUES ("${userId}", "${goods}", "${totalMoney}", "${createTime}", "0");`;
+        return pool.execute(sql);
+    },
+    //删除购物车表对应成单商品
+    deleteCartById(userId,goods){
+        let sql = `delete from cart where good_id in (${goods}) and user_id = ${userId};`;
+        console.log(sql);
         return pool.execute(sql);
     },
     getAllOrder(){

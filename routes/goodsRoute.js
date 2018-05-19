@@ -4,7 +4,8 @@ var router = express.Router();
 let goodsDB = require('../DB/goodsDB');
 
 router.get('/getAllGoods',(res,resp) => {
-    goodsDB.getAllGoods().then(res => {
+    let { keyword } = res.query;
+    goodsDB.getAllGoods(keyword).then(res => {
         resp.json({
             code: 0,
             data: res,
